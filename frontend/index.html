@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Maps Company Scraper</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">🗺️ <span>Maps Company Scraper</span></div>
+    <div class="powered">Powered by Playwright · FastAPI</div>
+  </header>
+
+  <main class="container">
+    <section class="search-card">
+      <h1>Find companies from Google Maps</h1>
+      <p class="sub">Type a search request (e.g. "IT companies in Mohali") — the scraper extracts the category and location, then scrapes the map.</p>
+
+      <form id="search-form">
+        <input id="query" type="text" placeholder="e.g. show me the IT companies in Mohali" autocomplete="off" required />
+        <div class="controls">
+          <label>Max results
+            <input id="max" type="number" min="1" max="120" value="20" />
+          </label>
+          <label class="checkbox">
+            <input id="enrich" type="checkbox" checked /> Find emails (visit websites)
+          </label>
+          <button id="go" type="submit">Search</button>
+        </div>
+      </form>
+
+      <div class="examples">
+        Try:
+        <button type="button" class="chip">IT companies in Mohali</button>
+        <button type="button" class="chip">digital marketing agencies in Chandigarh</button>
+        <button type="button" class="chip">dentists in Pune</button>
+      </div>
+    </section>
+
+    <section id="status-card" class="status-card hidden">
+      <div class="spinner" id="spinner"></div>
+      <div class="status-text">
+        <strong id="parsed-line">Working…</strong>
+        <div id="log" class="log"></div>
+      </div>
+    </section>
+
+    <section id="results-card" class="results-card hidden">
+      <div class="results-head">
+        <h2><span id="count">0</span> companies found</h2>
+        <div class="exports">
+          <button class="exp" data-fmt="csv">⬇ CSV</button>
+          <button class="exp" data-fmt="xlsx">⬇ Excel</button>
+          <button class="exp" data-fmt="json">⬇ JSON</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table id="results-table">
+          <thead>
+            <tr>
+              <th>#</th><th>Company</th><th>Website</th><th>Phone</th>
+              <th>Email</th><th>Address</th><th>Maps</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="error-card" class="error-card hidden"></section>
+  </main>
+
+  <script src="/static/script.js"></script>
+</body>
+</html>
