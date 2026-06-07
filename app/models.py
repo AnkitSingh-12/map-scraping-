@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 class SearchRequest(BaseModel):
     """Incoming user query, e.g. 'IT companies in Mohali'."""
     query: str = Field(..., min_length=2, examples=["IT companies in Mohali"])
-    max_results: Optional[int] = Field(None, ge=1, le=120)
+    max_results: Optional[int] = Field(None, ge=1, le=1000)
     enrich: Optional[bool] = None
 
 

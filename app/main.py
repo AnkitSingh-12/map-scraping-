@@ -6,21 +6,36 @@ Pipeline (mirrors the architecture diagram):
 """
 import asyncio
 import json
+import sys
 from pathlib import Path
 from typing import List
+
+# Setup sys.path to resolve relative import issues when executing directly
+BASE_DIR = Path(__file__).resolve().parent.parent
+if str(BASE_DIR) not in sys.path:
+    sys.path.insert(0, str(BASE_DIR))
 
 from fastapi import FastAPI, Response
 from fastapi.responses import StreamingResponse, FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from .config import settings
-from .models import SearchRequest, SearchResponse, Company
-from . import ai_agent, scraper, enrichment, validation, export
+from contextlib import asynccontextmanager
 
-BASE_DIR = Path(__file__).resolve().parent.parent
+from app.config import settings
+from app.models import SearchRequest, SearchResponse, Company
+from app import ai_agent, scraper, enrichment, validation, export, categorizer, database
+
 FRONTEND_DIR = BASE_DIR / "frontend"
 
-app = FastAPI(title="Maps Company Scraper", version="1.0.0")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Initialize database tables on startup
+    await database.init_db()
+    yield
+
+
+app = FastAPI(title="Maps Company Scraper", version="1.0.0", lifespan=lifespan)
 
 
 # ----------------------------- core pipeline -----------------------------
@@ -37,6 +52,12 @@ async def run_pipeline(query: str, max_results: int, enrich: bool, log=lambda m:
 
     log("Validating and de-duplicating results...")
     companies = validation.validate_companies(companies)
+
+    log("Categorizing companies using Automaton Layer...")
+    for company in companies:
+        company.category = categorizer.company_categorizer.categorize(company)
+
+    await database.save_companies(query, companies, log)
 
     log(f"Done — {len(companies)} companies.")
     return SearchResponse(query=query, parsed=parsed, count=len(companies), results=companies)
@@ -114,6 +135,28 @@ async def health():
     return {"status": "ok"}
 
 
+@app.get("/api/db-companies")
+async def get_db_companies():
+    try:
+        import asyncpg
+        params = await database.get_connection_params()
+        conn = await asyncpg.connect(**params)
+        try:
+            rows = await conn.fetch("SELECT id, query, name, maps_url, website, phone, email, address, category, rating, created_at FROM companies ORDER BY id DESC")
+            # Convert record objects to dictionary with serializable values
+            results = []
+            for r in rows:
+                d = dict(r)
+                if d.get("created_at"):
+                    d["created_at"] = d["created_at"].isoformat()
+                results.append(d)
+            return results
+        finally:
+            await conn.close()
+    except Exception as e:
+        return JSONResponse({"error": f"Failed to fetch database records: {e}"}, status_code=500)
+
+
 # ----------------------------- frontend ----------------------------------
 @app.get("/")
 async def index():
@@ -121,3 +164,9 @@ async def index():
 
 
 app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static")
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("app.main:app", host="127.0.0.1", port=8012, reload=True)
+

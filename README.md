@@ -8,7 +8,10 @@ Type a natural request like *"show me the IT companies in Mohali"* and get back:
 
 Export everything to **CSV / Excel / JSON**.
 
-## How it works (matches the architecture)
+## How it works (Working Flow)
+
+**One-line Working Flow:**
+`User Query ➔ Rule-Based Query Parser ➔ Playwright Google Maps Scraper ➔ Website Email Enrichment ➔ Data Validation ➔ Trie-Based Automaton Categorizer ➔ PostgreSQL Database Storage ➔ Web UI Output & Downloads`
 
 ```
 User Query
@@ -24,7 +27,11 @@ Website Enrichment        ← visits each site's contact/about pages, extracts e
    ▼
 Data Validation           ← dedupe, normalize phones, validate emails/websites
    ▼
-Structured Output         ← CSV / Excel / JSON  +  live web UI
+Company Categorization    ← Trie-based keyword matching search automaton
+   ▼
+Database Storage          ← batch upserts results to PostgreSQL database
+   ▼
+Structured Output         ← CSV / Excel / JSON + Database Viewer + live web UI
 ```
 
 ## Tech stack
@@ -52,7 +59,7 @@ pip install -r requirements.txt
 playwright install chromium
 
 # 5. Run the server
-uvicorn app.main:app --reload --port 8011
+uvicorn app.main:app --reload --port 8012
 ```
 
 ### Windows (PowerShell)
@@ -71,22 +78,22 @@ pip install -r requirements.txt
 python -m playwright install chromium
 
 # 5. Run the server
-uvicorn app.main:app --reload --port 8011
+uvicorn app.main:app --reload --port 8012
 ```
 
 ### Running Without Activating the Virtual Environment
 You can also start the server directly using the virtual environment's executable:
 ```bash
-./.venv/bin/uvicorn app.main:app --reload --port 8011
+./.venv/bin/uvicorn app.main:app --reload --port 8012
 ```
 
-Open **http://127.0.0.1:8011** in your browser.
+Open **http://127.0.0.1:8012** in your browser.
 
 ## Configuration (`.env`)
 
 | Variable | Default | Meaning |
 |---|---|---|
-| `MAX_RESULTS` | `20` | Companies to scrape per query (per-request override capped at 120) |
+| `MAX_RESULTS` | `20` | Companies to scrape per query (per-request override capped at 1000) |
 | `HEADLESS` | `true` | `false` to watch the browser work |
 | `ENRICH_WEBSITES` | `true` | Visit sites to find emails |
 | `SCRAPE_TIMEOUT_MS` | `45000` | Per-page navigation timeout |

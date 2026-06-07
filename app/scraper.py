@@ -57,7 +57,8 @@ async def _collect_place_urls(page: Page, want: int, log: Callable[[str], None])
     urls: List[str] = []
     seen = set()
     stagnant = 0
-    for _ in range(40):  # hard cap on scroll iterations
+    max_scrolls = max(40, want // 10)
+    for _ in range(max_scrolls):  # dynamic cap on scroll iterations
         anchors = page.locator(f"{feed_sel} a[href*='/maps/place/']")
         n = await anchors.count()
         for i in range(n):
